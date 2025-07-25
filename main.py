@@ -1,16 +1,17 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+
 import os
 from dotenv import load_dotenv
-from utils import HSDataManager, extract_hs_codes, clean_text, web_search_answer, classify_question
-from utils import handle_web_search, handle_hs_classification_cases, handle_hs_manual, handle_overseas_hs
+from utils import HSDataManager, extract_hs_codes, clean_text, classify_question
+from utils import handle_web_search, handle_hs_classification_cases, handle_hs_manual, handle_overseas_hs, get_hs_explanations
 
 # 환경 변수 로드 (.env 파일에서 API 키 등 설정값 로드)
 load_dotenv()
 
 # Gemini API 설정
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-genai.configure(api_key=GOOGLE_API_KEY)
+client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Streamlit 페이지 설정
 st.set_page_config(
@@ -57,6 +58,9 @@ def get_hs_manager():
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []  # 채팅 기록 저장
 
+if 'selected_category' not in st.session_state:
+    st.session_state.selected_category = "AI자동분류"  # 기본값
+
 if 'context' not in st.session_state:
     # 초기 컨텍스트 설정 (카테고리 분류 안내 추가)
     st.session_state.context = """당신은 HS 품목분류 전문가로서 관세청에서 오랜 경력을 가진 전문가입니다. 사용자가 물어보는 품목에 대해 아래 네 가지 유형 중 하나로 질문을 분류하여 답변해주세요.
@@ -84,7 +88,19 @@ def process_input():
 
     st.session_state.chat_history.append({"role": "user", "content": ui})
     hs_manager = get_hs_manager()
-    q_type = classify_question(ui)
+
+    if st.session_state.selected_category == "AI자동분류":
+        q_type = classify_question(ui)
+    else:
+        # 사용자 선택에 따른 매핑
+        category_mapping = {
+            "웹검색": "web_search",
+            "국내HS분류사례 검색": "hs_classification", 
+            "해외HS분류사례검색": "overseas_hs",
+            "HS해설서분석": "hs_manual",
+            "HS해설서원문검색": "hs_manual_raw"
+        }
+        q_type = category_mapping.get(st.session_state.selected_category, "hs_classification")
 
     # 질문 유형별 분기
     if q_type == "web_search":
@@ -95,6 +111,12 @@ def process_input():
         answer = "\n\n +++ HS 해설서 분석 실시 +++ \n\n" + handle_hs_manual(ui, st.session_state.context, hs_manager)
     elif q_type == "overseas_hs":
         answer = "\n\n +++ 해외 HS 분류 검색 실시 +++ \n\n" + handle_overseas_hs(ui, st.session_state.context, hs_manager)
+    elif q_type == "hs_manual_raw":
+        hs_codes = extract_hs_codes(ui)
+        if hs_codes:
+            answer = "\n\n +++ HS 해설서 원문 검색 실시 +++ \n\n" + clean_text(get_hs_explanations(hs_codes))
+        else:
+            answer = "HS 코드를 찾을 수 없습니다. 4자리 HS 코드를 입력해주세요. (예: 1234 또는 HS1234)"
     else:
         # 예외 처리: 기본 HS 분류
         answer = handle_hs_classification_cases(ui, st.session_state.context, hs_manager)
@@ -104,7 +126,7 @@ def process_input():
     st.session_state.user_input = ""
 
 
-# 사이드바 설정
+# 사이드바 설정 (main.py의 with st.sidebar: 부분 교체)
 with st.sidebar:
     st.title("HS Chatbot")
     st.markdown("""
@@ -112,12 +134,17 @@ with st.sidebar:
 
     이 챗봇은 다음과 같은 방식으로 사용자의 질문에 답변합니다:
 
-    - **웹 검색(Web Search)**: 물품개요, 용도, 뉴스, 무역동향, 산업동향 등 일반 정보 탐색이 필요한 경우 Serper API를 통해 최신 정보를 제공합니다.
-    - **HS 분류 검색(HS Classification Search)**: 관세청의 품목분류 사례 약 1000개의 데이터베이스를 활용하여 HS 코드, 품목분류, 관세, 세율 등 정보를 제공합니다.
-    - **HS 해설서 분석(HS Manual Analysis)**: HS 해설서, 규정, 판례 등 심층 분석이 필요한 경우 관련 해설서와 규정을 바탕으로 답변합니다.
-    - **해외 HS 분류(Overseas HS Classification)**: 미국 및 EU 관세청의 품목분류 사례를 활용하여 해외 HS 분류 정보를 제공합니다.
+    - **웹 검색(Web Search)**: 물품개요, 용도, 뉴스, 무역동향, 산업동향 등 일반 정보 탐색 시 Serper API를 통해 최신 정보를 제공합니다.
+    
+    - **국내 HS 분류 검색(HS Classification Search)**: 관세청의 품목분류 사례 약 1,000개 데이터베이스를 **Multi Agents 시스템**으로 분석합니다. 데이터를 5개 그룹으로 분할하여 각 그룹별로 가장 유사한 3개 사례를 찾고, Head Agent가 최종 취합하여 전문적인 HS 코드 분류 답변을 제공합니다.
+    
+    - **해외 HS 분류(Overseas HS Classification)**: 미국 및 EU 관세청의 품목분류 사례를 **Multi Agents 시스템**으로 분석합니다. 해외 데이터를 5개 그룹으로 분할하여 각 그룹별 유사 사례 3개씩을 찾고, Head Agent가 종합하여 해외 분류 동향을 제공합니다.
+    
+    - **HS 해설서 분석(HS Manual Analysis)**: HS 해설서, 통칙, 규정 등을 바탕으로 품목의 성분, 용도, 가공상태를 고려한 심층 분석을 제공합니다.
+    
+    - **AI 자동분류**: 사용자 질문을 LLM이 자동으로 분석하여 위 4가지 유형 중 가장 적합한 방식으로 답변합니다.
 
-    사용자는 HS 코드, 품목 분류, 시장 동향, 규정 해설, 해외 분류 사례 등 다양한 질문을 할 수 있습니다.
+    **핵심 특징**: 국내외 품목분류 사례 분석 시 Multi Agents 구조를 활용하여 대용량 데이터에서 최적의 분류 사례를 찾아 전문적이고 정확한 답변을 제공합니다.
     """)
     
     # 새로운 채팅 시작 버튼
@@ -146,6 +173,16 @@ with st.sidebar:
 st.title("HS 품목분류 챗봇")
 st.write("HS 품목분류에 대해 질문해주세요!")
 
+# 질문 유형 선택 라디오 버튼
+st.session_state.selected_category = st.radio(
+    "질문 유형을 선택하세요:",
+    ["AI자동분류", "웹검색", "국내HS분류사례 검색", "해외HS분류사례검색", "HS해설서분석", "HS해설서원문검색"],
+    index=0,  # 기본값: AI자동분류
+    horizontal=True
+)
+
+st.divider()  # 구분선 추가
+
 # 채팅 기록 표시
 for message in st.session_state.chat_history:
     if message["role"] == "user":
@@ -153,9 +190,15 @@ for message in st.session_state.chat_history:
                    <strong>사용자:</strong> {message['content']}
                    </div>""", unsafe_allow_html=True)
     else:
-        st.markdown(f"""<div style='background-color: #f0f2f6; padding: 10px; border-radius: 10px; margin-bottom: 10px;'>
-                   <strong>품목분류 전문가:</strong> {message['content']}
-                   </div>""", unsafe_allow_html=True)
+        # HS 해설서 원문인지 확인
+        if "+++ HS 해설서 원문 검색 실시 +++" in message['content']:
+            # 마크다운으로 렌더링하여 구조화된 형태로 표시
+            st.markdown("**품목분류 전문가:**")
+            st.markdown(message['content'])
+        else:
+            st.markdown(f"""<div style='background-color: #f0f2f6; padding: 10px; border-radius: 10px; margin-bottom: 10px;'>
+                    <strong>품목분류 전문가:</strong> {message['content']}
+                    </div>""", unsafe_allow_html=True)
 
 
 # 하단 입력 영역 (Enter 키로만 전송)
