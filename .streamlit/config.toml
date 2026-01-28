@@ -1,0 +1,19 @@
+[theme]
+# Primary theme settings
+primaryColor = "#3B82F6"        # Modern blue for buttons and accents
+backgroundColor = "#FFFFFF"      # Clean white background
+secondaryBackgroundColor = "#F8FAFC"  # Light gray for containers
+textColor = "#1E293B"           # Dark slate for text
+
+# Font settings
+font = "sans serif"
+
+# UI settings
+base = "light"                  # Base theme (light/dark)
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+port = 8501

@@ -4,3 +4,6 @@ __pycache__/
 .env
 .python-version
 previously/
+CLAUDE.md
+tfidf_indexes.pkl
+README_standard.md
