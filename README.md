@@ -1,204 +1,391 @@
 # HS 품목분류 챗봇 (슬기로운 품목분류 생활)
 
-**HS 품목분류 사례 및 해설서 전문 AI 챗봇**
+**HS 품목분류 사례 및 해설서 전문 AI 챗봇** — 무료 Gemini API 기반
+
+![Python](https://img.shields.io/badge/Python-3.13-blue) ![Streamlit](https://img.shields.io/badge/Streamlit-Web_App-red) ![Gemini](https://img.shields.io/badge/Google_Gemini-AI-green)
+
+- 💰 **완전 무료** — Google Gemini 무료 API로 구동
+- 🤝 **Multi-Agent 병렬 분석** — 5개 AI가 동시 분석 후 Head AI가 종합
+- ⚡ **하이브리드 RAG** — AI 쿼리 확장 + TF-IDF Character n-gram 검색
 
 ---
 
 <details open>
 <summary><b>📑 목차</b></summary>
 
-- [💡 1인1봇 프로젝트](#-1인1봇-프로젝트)
-- [💬 채팅 시나리오](#-채팅-시나리오-led-무드등-수입-업무)
-- [🎯 4가지 특징](#-이-챗봇의-4가지-특징)
-  - [💰 무료: 구글 제미나이 무료 모델 사용](#-1-무료-구글-제미나이-무료-모델-사용)
-  - [🤝 멀티 에이전트: 여러 AI의 협업](#-2-멀티-에이전트-여러-ai의-협업으로-성능-극대화)
-  - [⚡ TF-IDF Character n-gram](#-3-tf-idf-character-n-gram-일반-노트북에서도-빠르게-구동)
+- [💬 데모 시나리오](#-데모-시나리오-led-무드등-수입-업무)
+- [🚀 빠른 시작](#-빠른-시작)
+- [🔄 질문 유형별 동작 원리](#-질문-유형별-동작-원리)
+- [🏗️ 시스템 아키텍처](#️-시스템-아키텍처)
 - [📊 데이터](#-데이터)
-- [🚀 사용법](#-사용법)
-  - [🔍 웹 검색](#1--웹-검색)
-  - [🇰🇷 국내 분류사례 기반 HS 추천](#2--국내-분류사례-기반-hs-추천)
-  - [📋 국내 분류사례 원문 검색](#3--국내-분류사례-원문-검색)
-  - [🌍 해외 분류사례 기반 HS 추천](#4--해외-분류사례-기반-hs-추천)
-  - [🗂️ 해외 분류사례 원문 검색](#5-️-해외-분류사례-원문-검색)
-  - [📚 HS 해설서 분석](#6--hs-해설서-분석-사용자-제시-코드)
-  - [📖 HS 해설서 원문 검색](#7--hs-해설서-원문-검색)
-- [⚠️ 한계](#️-한계)
-- [📁 프로젝트 구조](#-프로젝트-구조)
-- [⚙️ 기술 아키텍처](#️-기술-아키텍처)
-- [🔧 설치 및 실행 방법](#-설치-및-실행-방법)
-- [📦 주요 의존성](#-주요-의존성)
-- [📄 라이선스](#-라이선스)
-- [👤 개발자 정보](#-개발자-정보)
+- [💎 핵심 기술 상세](#-핵심-기술-상세)
+- [⚠️ 한계 및 주의사항](#️-한계-및-주의사항)
+- [📄 라이선스 / 개발자 정보](#-라이선스--개발자-정보)
 
 </details>
 
 ---
 
-## 💡 1인1봇 프로젝트
+## 💬 데모 시나리오: LED 무드등 수입 업무
 
-**AI 시대, 누구나 자신만의 AI 품목분류 비서를 만들 수 있습니다**
+캐릭터 피규어 하우스 LED 무드등을 수입하려는 상황을 예시로, 5단계 활용 시나리오를 소개합니다.
 
-- 복잡한 품목분류 사례를 즉시 검색하고 답변 받는 나만의 AI 비서
-- 코딩 지식 없이도 사용 가능한 웹 인터페이스
-- HS 품목분류 업무에 특화된 전문 AI 챗봇
+### 1️⃣ 웹 검색
+> **"LED 무드등의 기술 사양과 시장 동향, 주요 용도는?"**
+> → LED 조명 기술 현황, 인테리어 소품 시장, 수면등/분위기 조명 용도 확인
 
----
+### 2️⃣ 국내 HS 분류사례 검색
+> **"LED 충전식 무드등은 어떤 HS코드로 분류되나요?"**
+> → 9405.21-0000 (전기식 탁상용/침대용 램프) **14건 확인**, Multi-Agent 병렬 분석
 
-## 💬 채팅 시나리오: LED 무드등 수입 업무
+### 3️⃣ 해외 HS 분류사례 검색
+> **"미국과 EU에서 LED lamp, mood light 분류 사례는?"**
+> → 미국 CBP 27건, EU BTI 292건 분석
 
-당신은 캐릭터 굿즈를 수입하는 온라인 쇼핑몰 MD입니다.
-LED 조명이 내장된 피규어 하우스 무드등을 수입하려는데, 정확한 HS 코드를 찾아야 합니다.
+### 4️⃣ HS 해설서 비교 분석
+> **"9405.21과 9503 중 어디에 분류되는지 해설서와 통칙으로 비교 분석해줘"**
+> → 9405.21-0000 최종 선정 (통칙 3, 본질적 특성은 조명 기능)
 
-### 1️⃣ 1단계: 🔍 웹 검색
-
-**질문:** "LED 무드등의 기술 사양과 시장 동향, 주요 용도는?"
-
-**답변:** LED 조명 기술 발전 현황, 인테리어 소품 시장 규모, 수면등/분위기 조명 용도 확인
-
-- LED 광원 충전식 무드등
-- 본체, 피규어, USB 케이블 포함
-- 배터리: 900mAh 내장
-- 작동 방식: 마그네틱으로 피규어를 넣으면 LED 점등
-
-### 2️⃣ 2단계: 🇰🇷 국내 HS 분류사례 검색
-
-**질문:** "LED 충전식 무드등은 어떤 HS코드로 분류되나요?"
-
-**답변:** 9405.21-0000 (전기식 탁상용/침대용 램프) **14건 확인**
-
-- 관세청 분류사례를 5개 그룹으로 분할하여 Multi-Agent 병렬 분석
-- Head Agent가 모든 그룹 결과를 종합하여 최종 답변 생성
-
-### 3️⃣ 3단계: 🌍 해외 HS 분류사례 검색
-
-**질문:** "미국과 EU에서 LED lamp, mood light 분류 사례는?"
-
-**답변:**
-- 미국 CBP: **27건** - 주로 9405 류 분류
-- EU BTI: **292건** - 9405 류 또는 9503(장난감) 분류 사례 분석
-- 국제적 분류 동향 파악
-
-### 4️⃣ 4단계: 📚 HS 해설서 분석
-
-**질문:** "캐릭터 피규어가 포함된 LED 무드등이 9405.21(전기식 램프)과 9503(장난감) 중 어디에 분류되는지 해설서와 통칙을 근거로 비교 분석해줘"
-
-**답변:**
-- 9405.21-0000 **최종 선정**
-- 근거: 통칙 3(본질적 특성은 조명 기능)
-- HS 해설서 제94류 및 제95류 비교 분석
-- 관세율표 정보 및 통칙 종합 검토
-
-### 5️⃣ 5단계: 📖 HS 해설서 원문 검색
-
-**질문:** "9405.21"
-
-**답변:**
-- 특정 HS 코드의 해설서 원문을 구조화된 형태로 제공
-- 통칙, 부/류/호 해설을 체계적으로 정리하여 표시
+### 5️⃣ HS 해설서 원문 검색
+> **"9405.21"**
+> → 해당 HS 코드의 해설서 원문을 구조화된 형태로 제공
 
 ---
 
-## 🎯 이 챗봇의 4가지 특징
+## 🚀 빠른 시작
 
-### 💰 1. 무료: 구글 제미나이 무료 모델 사용
+### 필수 준비물
+- **Python 3.13+** 및 인터넷 연결
+- **Google API Key** (무료): [Google AI Studio](https://aistudio.google.com/apikey)에서 발급
 
-- **비용**: 완전 무료 (Google Gemini 2.5 Flash 무료 API 사용)
-- **설치**: 개인 노트북이나 무료 Streamlit Community Cloud에서 실행 가능
+### 설치 및 실행
 
-### 🤝 2. 멀티 에이전트: 여러 AI의 협업으로 성능 극대화
+```bash
+# 1. 프로젝트 다운로드
+git clone https://github.com/YSCHOI-github/kcs_hs_chatbot
+cd kcs_hs_chatbot
 
-- **원리**: TF-IDF로 사용자 질문과 유사한 품목분류 사례 상위 100개 추출 → 5개 그룹으로 분할 → 각 Group AI가 병렬 분석 → Head AI가 종합
-- **AI 답변 출력 과정**:
-  - 사용자 질문에 대해 **각 AI**의 답변을 **Expander**(박스)에 출력
-  - 최종 답변 완성 시 각 AI의 답변이 있는 Expander가 닫히고, **HEAD AI**의 최종 답변 출력
-  - 사용자는 Expander를 열어서 각 AI의 답변 확인 가능
-- **장점**: 빠른 검색, 다양한 관점에서 분석, 답변 정확도 향상
-- **예시**: "LED 무드등" 질문 시
-  - TF-IDF가 전체 987건에서 상위 100개 사례 추출
-  - 5개 Group AI가 각각 20개 사례씩 병렬 분석
-  - Head AI가 5개 분석 결과를 종합하여 최종 답변 제공
+# 2. 라이브러리 설치
+pip install -r requirements.txt
 
-### ⚡ 3. 하이브리드 RAG: AI 쿼리 확장 + TF-IDF 검색
+# 3. API 키 설정 (.env 파일 생성)
+echo GOOGLE_API_KEY=여기에_발급받은_키_입력 > .env
 
-#### 3-1. 🧠 AI 쿼리 확장 (NEW!)
+# 4. 실행
+streamlit run main.py
+```
 
-- **원리**: AI가 사용자 질문을 분석하여 유사어, 영문 표현, 관련 용어를 자동으로 추가
-- **효과**:
-  - "스마트워치 밴드" 입력 → AI가 "시계, 줄, 스트랩, watch, strap, wrist, 실리콘, 고무" 등 자동 추가
-  - 검색 범위 대폭 확대 (더 많은 관련 사례 발견 가능)
-  - 어휘 불일치 문제 해결 (사용자가 "밴드"라고 해도 문서에 "스트랩"으로 기록된 사례 검색 가능)
-- **기술**:
-  - Gemini 2.0 Flash AI + 품목분류 용어사전 1,149개
-  - 물품명, 재질, 성분, 기능 자동 식별
-  - 한글/영문 유사어 동시 생성
-- **예시**: "폴리에틸렌 비닐봉지" 입력 시
-  - **원본 검색**: "폴리에틸렌 비닐봉지"만 검색 → 정확히 일치하는 표현의 사례만 발견
-  - **AI 확장 후**: "비닐봉지, 봉지, 포장, bag, plastic, polyethylene, 합성수지, 에틸렌, 폴리머, 운반, 저장" 등 추가
-  - **결과**: 더 많은 관련 사례 검색 - "플라스틱 포장재", "polyethylene bag", "PE 봉지" 등 유사 표현 사례도 모두 발견
+브라우저에서 `http://localhost:8501`로 접속하여 사용합니다.
 
-#### 3-2. ⚡ TF-IDF Character n-gram 검색
+### 주요 의존성
 
-- **원리**: 확장된 쿼리를 2~4글자 단위로 분해하여 복합어 정확 매칭
-- **장점**:
-  - **임베딩보다 가볍고 빠릅니다**:
-    - 일반적인 AI 챗봇은 '임베딩'이라는 방식으로 문서를 검색합니다.
-    - 문장의 의미를 복잡한 숫자로 변환하는 과정인데, 시간이 오래 걸리고 고성능 서버가 필요합니다.
-    - 이 챗봇은 TF-IDF 방식을 사용해서 임베딩보다 압도적으로 빠르고, 일반 노트북으로도 수천 건의 문서를 1~2초 만에 검색할 수 있습니다.
-  - **TF-IDF 단어 방식보다 정확합니다**:
-    - 일반적인 TF-IDF는 '단어' 단위로 검색합니다.
-    - 문제는 띄어쓰기나 조사가 조금만 달라져도 다른 단어로 인식한다는 점입니다.
-    - 이 챗봇은 Character n-gram 방식을 적용했습니다. 단어를 2~4글자 단위로 잘게 쪼개서 검색합니다.
-- **예시**: "폴리우레탄폼" 검색 시
-  - 일반 TF-IDF 단어 검색: "폴리우레탄 폼"과 "폴리우레탄폼"을 다른 단어로 인식
-  - TF-IDF Character n-gram: "폴리", "리우", "우레", "레탄", "탄폼"으로 쪼개서 검색
-  - 결과: 띄어쓰기가 다르거나 조사가 붙어도 정확하게 검색
-156: 
-157: ### 🛡️ 4. 안정성: 3단계 Fallback 시스템
-158: 
-159: #### 4-1. 🚦 Smart Wait & Jitter
-160: 
-161: - **429 에러(사용량 초과) 자동 대응**:
-162:   - 무작정 기다리지 않고, API가 알려주는 **정확한 시간만큼만 대기** (Smart Wait)
-163:   - 여러 AI가 동시에 재시도할 때 충돌하지 않도록 **랜덤 지연 시간(Jitter)** 추가
-164: 
-165: #### 4-2. 🔄 Agent별 최적화된 모델 전환 (Fail-over) 전략
-166: 
-167: 단순 재시도가 아니라, 실패 시 **즉시 더 가볍거나 안정적인 모델로 전환**하여 서비스 중단 방지
-168: 
-169: | Agent (역할) | 전략 | 1순위 (Primary) | 2순위 (Fallback) | 3순위 (Backup) |
-170: | :--- | :--- | :--- | :--- | :--- |
-171: | **Head Agent** (최종 판단) | **품질 우선** | **Gemini 3.0 Preview**<br>(최신/고성능) | Gemini 2.5 Lite | Gemini 2.0 Flash |
-172: | **Group Agent** (사례 분석) | **안정성 우선** | **Gemini 2.5 Flash**<br>(밸런스) | Gemini 2.5 Lite | Gemini 2.0 Flash |
-173: | **Query Expander** (검색) | **속도 우선** | **Gemini 2.5 Lite**<br>(초고속) | Gemini 2.0 Flash | - |
+| 패키지 | 용도 |
+|:---|:---|
+| `streamlit` | 웹 애플리케이션 프레임워크 |
+| `google-genai` | Gemini AI 모델 연동 |
+| `scikit-learn` | TF-IDF 벡터화 (Vectorizer) |
+| `numpy`, `pandas` | 데이터 처리 |
+| `python-dotenv` | 환경변수 (.env) 관리 |
+
+---
+
+## 🔄 질문 유형별 동작 원리
+
+사용자는 UI 상단의 라디오 버튼으로 7가지 질문 유형 중 하나를 선택합니다. 각 유형은 서로 다른 처리 파이프라인을 거칩니다.
+
+### 전체 흐름 개요
+
+```mermaid
+flowchart TD
+    A["🧑 사용자 질문 입력"] --> B{"질문 유형 선택<br>(config.py)"}
+    B -->|웹 검색| C["Google Search API<br>(handlers.py)"]
+    B -->|국내 HS 추천| D["Multi-Agent 파이프라인"]
+    B -->|해외 HS 추천| D
+    B -->|국내 원문 검색| E["키워드 직접 매칭<br>(keyword_searcher.py)"]
+    B -->|해외 원문 검색| E
+    B -->|HS 해설서 분석| F["해설서 비교 분석<br>(hs_manual_utils.py)"]
+    B -->|HS 해설서 원문| G["해설서 원문 조회<br>(hs_manual_utils.py)"]
+    D --> H["🤖 최종 답변"]
+    C --> H
+    E --> H
+    F --> H
+    G --> H
+```
+
+---
+
+### 1. 🔍 웹 검색 (`web_search`)
+
+**용도**: 물품 개요, 기술 동향, 시장 현황 등 일반 정보 탐색
+
+**처리 흐름**:
+1. 사용자 질문 + 대화 컨텍스트를 Gemini API에 전달
+2. Google Search API 도구를 활용하여 실시간 웹 검색 수행
+3. 검색 결과를 종합하여 답변 생성
+
+**관련 파일**: `handlers.py` → Gemini API (Google Search 도구 연동)
+
+---
+
+### 2. 🇰🇷 국내 분류사례 기반 HS 추천 (`domestic_hs_recommendation`)
+
+**용도**: 관세청 987건의 국내 분류사례를 AI가 분석하여 HS 코드 추천
+
+```mermaid
+flowchart TD
+    A["사용자 질문"] --> B["① AI 쿼리 확장<br>(query_expander.py)"]
+    B --> |"용어사전 1,149개 참조<br>유사어·영문·관련 용어 자동 추가"| C["② TF-IDF 검색<br>(tfidf_case_searcher.py)"]
+    C --> |"상위 100건 추출<br>Character n-gram 2~4글자"| D["③ 5개 그룹 분할<br>(handlers.py)"]
+    D --> E1["Group 1 AI<br>20건 분석"]
+    D --> E2["Group 2 AI<br>20건 분석"]
+    D --> E3["Group 3~5 AI<br>각 20건 분석"]
+    E1 --> F["④ Head AI 종합<br>(handlers.py)"]
+    E2 --> F
+    E3 --> F
+    F --> |"5개 분석 결과 교차 검증<br>빈도수 기반 최종 HS코드 선정"| G["최종 답변"]
+
+    style B fill:#e8f5e9
+    style C fill:#e3f2fd
+    style F fill:#fff3e0
+```
+
+**세부 절차**:
+
+| 단계 | 처리 내용 | 관련 파일 | AI 모델 |
+|:---|:---|:---|:---|
+| ① 쿼리 확장 | 물품명·재질·성분·기능 식별, 한글/영문 유사어 생성 | `query_expander.py` | Gemini 2.5 Flash Lite |
+| ② TF-IDF 검색 | 확장된 쿼리를 2~4글자로 분해, 코사인 유사도 기반 상위 100건 추출 | `tfidf_case_searcher.py` → `tfidf_search.py` | — |
+| ③ 그룹 분할 | 100건을 5개 그룹(각 20건)으로 분할 | `handlers.py` | — |
+| ④ 병렬 분석 | 5개 Group AI가 동시에 각 그룹 분석 (ThreadPoolExecutor) | `handlers.py` | Gemini 2.5 Flash |
+| ⑤ Head AI 종합 | 5개 분석 결과를 교차 검증, 빈도수 기반 최종 HS코드 선정 | `handlers.py` + `prompts.py` | Gemini 3.0 Flash Preview |
+
+---
+
+### 3. 📋 국내 분류사례 원문 검색 (`domestic_case_lookup`)
+
+**용도**: 키워드로 분류사례 원문을 직접 검색 (AI 분석 없음, 즉시 결과)
+
+**처리 흐름**:
+1. 입력값 유형 판별 (참고문서번호 / HS 코드 / 일반 키워드)
+2. 해당 방식으로 국내 987건 사례 데이터에서 직접 매칭 검색
+3. 카드형 검색 결과 표시 (검색어 하이라이트, 최대 10건)
+
+**검색 입력 예시**:
+- 참고문서번호: `품목분류2과-9433`
+- HS 코드: `5515.12`
+- 키워드: `섬유유연제`, `LED 무드등`
+
+**관련 파일**: `keyword_searcher.py` (참고문서번호 검색, 키워드 토큰 기반 OR 검색)
+
+---
+
+### 4. 🌍 해외 분류사례 기반 HS 추천 (`overseas_hs_recommendation`)
+
+**용도**: 미국 CBP 900건 + EU BTI 1,000건의 해외 사례를 AI가 분석하여 HS 코드 추천
+
+**처리 흐름**: 국내 HS 추천과 동일한 Multi-Agent 파이프라인 (쿼리 확장 → TF-IDF → 5그룹 병렬 → Head AI)
+
+**차이점**:
+- 검색 대상: 국내 987건 → **해외 1,900건** (미국 + EU)
+- AI 프롬프트: `OVERSEAS_CONTEXT` 사용 (미국/EU 분류 비교 분석 포함)
+- 영문 키워드 검색 지원
+
+---
+
+### 5. 🗂️ 해외 분류사례 원문 검색 (`overseas_case_lookup`)
+
+**용도**: 미국/EU 사례 원문을 키워드로 직접 검색 (AI 분석 없음)
+
+**처리 흐름**:
+1. 입력값 유형 판별 (참고문서번호 / HS 코드 / 일반 키워드)
+2. 미국·EU 데이터에서 각각 검색
+3. 국가별 색상 구분 카드로 결과 표시 (🇺🇸 빨간색 / 🇪🇺 파란색)
+
+**검색 입력 예시**:
+- 참고문서번호: `NY N338825`
+- HS 코드: `4202.92`
+- 키워드: `fabric`, `toy`
+
+**관련 파일**: `keyword_searcher.py`
+
+---
+
+### 6. 📚 HS 해설서 분석 (`hs_manual`)
+
+**용도**: 사용자가 제시한 여러 HS 코드를 해설서와 통칙 기반으로 비교 분석
+
+> ⚠️ **주의**: 반드시 HS 코드를 질문에 포함해야 합니다 (예: "3809.91과 5603 중 섬유유연제 시트는?")
+
+```mermaid
+flowchart TD
+    A["사용자 질문<br>(HS코드 포함 필수)"] --> B["① HS 코드 추출<br>(text_utils.py)"]
+    B --> C["② 관세율표 정보 수집<br>(hs_manual_utils.py)"]
+    C --> D["③ 해설서 정보 수집 및 요약<br>(hs_manual_utils.py)"]
+    D --> E["④ HS 통칙 9개 조항 준비<br>(hs_manual_utils.py)"]
+    E --> F["⑤ AI 비교 분석<br>(hs_manual_utils.py)"]
+    F --> G["최종 비교 분석 답변"]
+
+    style F fill:#fff3e0
+```
+
+**세부 절차**:
+
+| 단계 | 처리 내용 | 데이터 소스 |
+|:---|:---|:---|
+| ① 코드 추출 | 질문에서 HS 코드 패턴 자동 인식 | — |
+| ② 관세율표 조회 | 각 HS 코드의 국문/영문 품명 수집 | `hstable.json` (17,966개 코드) |
+| ③ 해설서 수집 | 각 HS 코드의 해설서를 검색하고 AI 요약 | `grouped_11_end.json` (1,448개 항목) |
+| ④ 통칙 준비 | HS 분류 통칙 9개 조항 로드 | `통칙_grouped.json` |
+| ⑤ AI 분석 | 관세율표 + 해설서 + 통칙을 종합하여 비교 분석 | Gemini AI |
+
+---
+
+### 7. 📖 HS 해설서 원문 검색 (`hs_manual_raw`)
+
+**용도**: 특정 HS 코드의 해설서 원문을 구조화된 형태로 즉시 조회
+
+**처리 흐름**:
+1. 입력에서 HS 코드 추출 (`text_utils.py`)
+2. 해설서 JSON 데이터에서 해당 코드의 원문 검색 (`hs_manual_utils.py`)
+3. 통칙 / 부·류·호 해설을 구조화하여 마크다운으로 표시
+
+**입력 예시**: `3809`, `3917`, `9027` (4자리 HS 코드 권장)
+
+---
+
+## 🏗️ 시스템 아키텍처
+
+### 레이어 구조
+
+```mermaid
+flowchart TB
+    subgraph presentation ["🖥️ Presentation Layer"]
+        main["main.py<br>Streamlit UI · CSS · 세션 관리"]
+    end
+
+    subgraph config ["⚙️ Config Layer"]
+        cfg["config.py<br>카테고리 매핑 · 예시 질문"]
+        prm["prompts.py<br>AI 시스템 프롬프트"]
+    end
+
+    subgraph logic ["🧠 Logic Layer"]
+        handler["handlers.py<br>7가지 유형별 핸들러 · Multi-Agent 로직"]
+    end
+
+    subgraph search ["🔍 Search Layer"]
+        qe["query_expander.py<br>AI 쿼리 확장"]
+        tcs["tfidf_case_searcher.py<br>TF-IDF 사례 검색"]
+        ks["keyword_searcher.py<br>키워드 직접 검색"]
+        se["search_engines.py<br>관세율표 + 해설서 병렬 검색"]
+    end
+
+    subgraph core ["⚙️ Core Layer"]
+        ts["tfidf_search.py<br>TF-IDF 엔진"]
+        hmu["hs_manual_utils.py<br>해설서 유틸리티"]
+        tu["text_utils.py<br>텍스트 처리"]
+        ar["api_retry.py<br>API 재시도 · Fallback"]
+    end
+
+    subgraph data ["💾 Data Layer"]
+        dl["data_loader.py<br>JSON 데이터 로딩"]
+        kn["knowledge/<br>JSON 데이터 파일"]
+    end
+
+    main --> cfg & prm
+    main --> handler
+    handler --> qe & tcs & ks & se
+    handler --> ar
+    tcs --> ts
+    se --> hmu
+    hmu --> tu
+    qe --> ar
+    tcs --> dl
+    ks --> dl
+    dl --> kn
+
+    style presentation fill:#e3f2fd
+    style config fill:#f3e5f5
+    style logic fill:#fff3e0
+    style search fill:#e8f5e9
+    style core fill:#fce4ec
+    style data fill:#f5f5f5
+```
+
+### 프로젝트 구조
+
+```
+kcs_hs_chatbot/
+├── main.py                      # Streamlit 웹 앱 (UI, CSS, 세션, 입력 처리)
+├── config.py                    # 카테고리 매핑, 예시 질문
+├── prompts.py                   # AI 시스템 프롬프트 (국내/해외 분석용)
+│
+├── utils/                       # 핵심 로직 패키지
+│   ├── __init__.py              # Facade 패턴 - HSDataManager 통합 인터페이스
+│   ├── handlers.py              # 7가지 질문 유형별 핸들러 + Multi-Agent 로직
+│   ├── query_expander.py        # AI 기반 쿼리 확장 (용어사전 활용)
+│   ├── tfidf_case_searcher.py   # TF-IDF 기반 사례 검색 (인덱스 관리)
+│   ├── tfidf_search.py          # TF-IDF Character n-gram 검색 엔진
+│   ├── keyword_searcher.py      # 키워드 직접 매칭 검색
+│   ├── hs_manual_utils.py       # HS 해설서 검색·요약·분석
+│   ├── search_engines.py        # 관세율표 + 해설서 병렬 검색
+│   ├── question_classifier.py   # LLM 기반 질문 유형 분류
+│   ├── data_loader.py           # JSON 데이터 로딩
+│   ├── text_utils.py            # 텍스트 정제, HS 코드 추출
+│   └── api_retry.py             # API 재시도 (Exponential Backoff + Jitter)
+│
+├── knowledge/                   # 데이터 파일
+│   ├── HS분류사례_part1~10.json # 국내 분류사례 (987건)
+│   ├── HS위원회.json / HS협의회.json
+│   ├── hs_classification_data_us.json  # 미국 CBP (900건)
+│   ├── hs_classification_data_eu.json  # EU BTI (1,000건)
+│   ├── hstable.json             # HS 품목분류표 (17,966개)
+│   ├── grouped_11_end.json      # HS 해설서 (1,448개)
+│   ├── 통칙_grouped.json        # HS 통칙 (9개 조항)
+│   └── hs_terminology_*.json    # 품목분류 용어사전 (1,149개)
+│
+├── tfidf_indexes.pkl.gz         # 사전 빌드된 TF-IDF 인덱스 캐시
+├── .env                         # API 키 (Git 제외)
+├── requirements.txt             # Python 의존성
+└── README.md
+```
+
+### 파일 간 연계 관계
+
+**`utils/__init__.py`의 Facade 패턴**
+
+`HSDataManager` 클래스가 내부적으로 3개의 하위 클래스를 감싸서, 외부에서는 단일 인터페이스로 접근할 수 있도록 합니다.
+
+```mermaid
+flowchart LR
+    A["main.py<br>HSDataManager()"] --> B["__init__.py<br>Facade 클래스"]
+    B --> C["data_loader.py<br>데이터 로딩"]
+    B --> D["tfidf_case_searcher.py<br>TF-IDF 검색"]
+    B --> E["keyword_searcher.py<br>키워드 검색"]
+```
 
 ---
 
 ## 📊 데이터
 
-### 📑 신뢰할 수 있는 공식 데이터 소스
+### 데이터 소스
 
-**국내 분류사례 (총 987건)**
-- 관세청 분류사례: 899건
-- HS위원회 결정: 76건
-- HS협의회 결정: 12건
+| 구분 | 소스 | 건수 |
+|:---|:---|---:|
+| **국내 분류사례** | 관세청 분류사례 | 899건 |
+| | HS위원회 결정 | 76건 |
+| | HS협의회 결정 | 12건 |
+| **해외 분류사례** | 미국 CBP 분류사례 | 900건 |
+| | EU 관세청 BTI | 1,000건 |
+| **공식 해설서** | HS 품목분류표 | 17,966개 코드 |
+| | HS 해설서 | 1,448개 항목 |
+| | HS 통칙 | 9개 조항 |
+| **용어사전** | 품목분류 용어사전 | 1,149개 단어 |
+| **실시간** | Google Search API | — |
 
-**해외 분류사례 (총 1,900건)**
-- 미국 CBP 분류사례: 900건
-- EU 관세청 BTI: 1,000건
+### JSON 데이터 구조
 
-**공식 해설서**
-- HS 품목분류표: 17,966개 코드
-- HS 해설서: 1,448개 항목
-- HS 통칙: 9개 조항
-
-**실시간 웹 데이터**
-- Google Search API 연동
-
-### 🗃️ 데이터 구조
-
-**형식**: 공식 데이터를 JSON 파일로 저장
-
-#### 📄 1. 국내 분류사례 (HS분류사례_part1~10.json, HS위원회.json, HS협의회.json)
+<details>
+<summary><b>국내 분류사례</b> (HS분류사례_part1~10.json)</summary>
 
 ```json
 {
@@ -206,13 +393,15 @@ LED 조명이 내장된 피규어 하우스 무드등을 수입하려는데, 정
   "decision_date": "2024-11-29",
   "organization": "관세평가분류원",
   "hs_code": "3809.91-0000",
-  "product_name": "Softening agent for textile; PIGEON REGULAR DRY SHEET PINK",
+  "product_name": "Softening agent for textile",
   "description": "양이온성 계면활성제, 향료, 스테아린산 등으로 구성된 섬유유연제...",
-  "decision_reason": "관세율표 제3809호에 완성가공제, 염색 촉진용..."
+  "decision_reason": "관세율표 제3809호에..."
 }
 ```
+</details>
 
-#### 📄 2. 해외 분류사례 (hs_classification_data_us.json, hs_classification_data_eu.json)
+<details>
+<summary><b>해외 분류사례</b> (hs_classification_data_us/eu.json)</summary>
 
 ```json
 {
@@ -221,495 +410,99 @@ LED 조명이 내장된 피규어 하우스 무드등을 수입하려는데, 정
   "reference_id": "ATBTI2025000003-DEC",
   "decision_date": "2025-03-31",
   "hs_code": "32089091",
-  "description": "Lacquer based on synthetic polymers, in the form of a clear...",
-  "decision_reason": "",
-  "keywords": "AS LIQUID COLOURLESS POLYMERS VISCOSE FOR PROTECTION..."
+  "description": "Lacquer based on synthetic polymers...",
+  "keywords": "POLYMERS VISCOSE FOR PROTECTION..."
 }
 ```
+</details>
 
-#### 📄 3. 관세율표 (hstable.json)
+<details>
+<summary><b>HS 해설서 / 통칙 / 관세율표</b></summary>
 
 ```json
-{
-  "품목번호": "0101",
-  "영문품명": "Live horses, asses, mules and hinnies.",
-  "한글품명": "살아 있는 말·당나귀·노새·버새"
-}
+// 관세율표 (hstable.json)
+{ "품목번호": "0101", "영문품명": "Live horses...", "한글품명": "살아 있는 말..." }
+
+// 해설서 (grouped_11_end.json)
+{ "header1": "제1부", "header2": "01.01", "pages": [13], "text": "..." }
+
+// 통칙 (통칙_grouped.json)
+{ "header1": "통칙", "header2": "HS해석에 관한 통칙", "text": "..." }
 ```
-
-#### 📄 4. HS 해설서 (grouped_11_end.json)
-
-```json
-{
-  "header1": "제1부",
-  "header2": "01.01",
-  "pages": [13],
-  "text": "\n--- Page 13 ---\n제1부\n01.01\n01.01 - 살아 있는 말·당나귀..."
-}
-```
-
-#### 📄 5. HS 통칙 (통칙_grouped.json)
-
-```json
-{
-  "header1": "통칙",
-  "header2": "HS해석에 관한 통칙",
-  "pages": [2],
-  "text": "\n--- Page 2 ---\n통칙\nHS해석에 관한 통칙\n이 표의 품목분류는..."
-}
-```
+</details>
 
 ---
 
-## 🚀 사용법
+## 💎 핵심 기술 상세
 
-### 1. 🔍 웹 검색
+### 1. 하이브리드 RAG (AI 쿼리 확장 + TF-IDF)
 
-**최신 정보를 실시간으로 검색합니다**
+전통적 검색(TF-IDF)의 속도와 AI의 의미 이해 능력을 결합한 검색 방식입니다.
 
-- 물품개요, 용도, 뉴스, 무역동향, 산업동향 등 최신 정보 제공
-- Google Search API를 통한 실시간 정보 검색
-- 예시: "전기차 배터리 최신 기술 개발 현황은?"
+**AI 쿼리 확장** (`query_expander.py`)
+- Gemini AI가 사용자 질문을 분석하여 유사어, 영문 표현, 관련 용어를 자동 추가
+- 품목분류 전문 용어사전 1,149개 활용
+- 예: "스마트워치 밴드" → "시계, 줄, 스트랩, watch, strap, wrist, 실리콘, 고무" 자동 추가
+- 어휘 불일치 문제 해결 (사용자가 "밴드"라고 해도 "스트랩"으로 기록된 사례 검색 가능)
 
-### 2. 🇰🇷 국내 분류사례 기반 HS 추천
+**TF-IDF Character n-gram** (`tfidf_search.py`)
+- 텍스트를 2~4글자 단위로 분해하여 검색 (형태소 분석 불필요)
+- 예: "폴리우레탄폼" → "폴리", "리우", "우레", "레탄", "탄폼"
+- **장점**: 띄어쓰기, 조사 차이에도 정확한 매칭 / 임베딩 대비 10배 이상 빠른 속도 / 일반 노트북에서 1~2초 내 검색
 
-**AI가 유사 사례를 분석하여 HS 코드를 추천합니다**
+### 2. Multi-Agent 시스템
 
-#### ⚙️ 동작 원리
-1. **TF-IDF Character n-gram 검색**: 전체 987건에서 상위 100개 유사 사례 추출 (0.02초)
-2. **5개 그룹 분할**: 각 그룹당 20개 사례 할당
-3. **병렬 Multi-Agent 분석**: 5개 Group AI가 동시에 각 그룹 분석
-4. **Head AI 종합**: 5개 분석 결과를 통합하여 최종 전문가 답변 생성
+TF-IDF로 추출한 상위 100건의 사례를 5개 AI가 병렬 분석하고, Head AI가 종합하는 구조입니다.
 
-#### ✨ 특징
-- 복합어 정확 매칭 ("폴리우레탄폼", "리튬이온배터리")
-- 빠른 응답
-- 전문적인 HS 코드 분류 답변
+- **Group AI (×5)**: 각 20건씩 병렬 분석, HS코드별 빈도수 집계 및 대표 사례 추출
+- **Head AI**: 5개 분석 결과를 교차 검증, 빈도수 기반 최종 HS코드 선정
+- **UI 표시**: 각 Group AI 답변을 Expander(박스)로 표시, Head AI 최종 답변은 상단에 표시
 
-#### 💡 예시
-- "섬유유연제의 HS코드는?"
-- "폴리아미드로 만든 자동차 브레이크 호스는 어떻게 분류되나요?"
+### 3. 3단계 Fallback 시스템
 
-### 3. 📋 국내 분류사례 원문 검색
+API 장애 시 자동으로 더 안정적인 모델로 전환합니다.
 
-**키워드로 정확한 분류사례 원문을 찾습니다**
+**Smart Wait & Jitter** (`api_retry.py`)
+- 429 에러(사용량 초과) 시 API가 알려주는 정확한 대기 시간만큼 대기
+- 병렬 AI 충돌 방지를 위한 랜덤 지연(Jitter) 추가
 
-#### 🔍 검색 방법
-1. **참고문서번호 직접 검색**
-   - 예시: "품목분류2과-9433"
-   - 해당 번호의 사례를 즉시 표시
+**Agent별 모델 전환 전략**:
 
-2. **HS 코드 검색**
-   - 예시: "5515.12", "4202.92"
-   - 해당 HS 코드의 모든 사례 표시
-
-3. **키워드 검색**
-   - 예시: "섬유유연제", "폴리아미드 호스", "LED 무드등"
-   - 키워드가 포함된 상위 10건 사례 표시
-   - 검색어는 자동으로 형광색 하이라이트
-
-#### 📋 검색 결과 형식
-- 카드형 Expander로 깔끔하게 정리
-- 각 카드 제목: 순위 + 참고문서번호 + HS코드 + 품목명 + 날짜
-- 클릭 시 상세 정보 표시:
-  - 참고문서번호, 결정일자, 결정기관, HS 코드
-  - 품목명, 품목 설명, 분류 근거
-
-#### 🔀 차이점: "국내 분류사례 기반 HS 추천"과 비교
-
-| 구분 | 원문 검색 | HS 추천 (TF-IDF + Multi-Agent) |
-|------|----------|-------------------------------|
-| 검색 방식 | 키워드 직접 매칭 | TF-IDF 유사도 검색 |
-| AI 분석 | ❌ 없음 | ✅ 5개 Group AI + Head AI |
-| 결과 형식 | 원문 그대로 표시 | AI 종합 분석 답변 |
-| 속도 | ⚡ 0.5초 이내 | 🤖 5-10초 |
-| 적합한 경우 | 정확한 사례 원문 확인 | HS 코드 추천 및 종합 분석 |
-
-### 4. 🌍 해외 분류사례 기반 HS 추천
-
-**미국 및 EU 사례를 AI가 분석하여 HS 코드를 추천합니다**
-
-#### ⚙️ 동작 원리
-1. **TF-IDF Character n-gram 검색**: 전체 1,900건에서 상위 100개 유사 사례 추출
-2. **5개 그룹 분할 + 병렬 Multi-Agent 분석**: 국내 사례와 동일한 방식
-3. **국제적 분류 동향 분석**: 미국/EU의 분류 기준 비교
-
-#### ✨ 특징
-- 영문 키워드 검색 지원
-- 국제 무역 실무에 유용
-- 국가별 분류 차이점 파악
-
-#### 💡 예시
-- "미국에서 파티 장식용품은 어떻게 분류하나요?"
-- "EU의 플라스틱 백 분류 기준은?"
-
-### 5. 🗂️ 해외 분류사례 원문 검색
-
-**미국 CBP 및 EU 관세당국 사례를 직접 검색합니다**
-
-#### 🔍 검색 방법
-1. **참고문서번호 검색**
-   - 미국: "NY N338825", "HQ 123456", "LA 789"
-   - 자동으로 해당 국가 사례 표시
-
-2. **HS 코드 검색**
-   - 예시: "5515.12", "4202.92"
-   - 해당 HS 코드의 모든 사례 표시 (미국/EU 구분)
-
-3. **키워드 검색**
-   - 영문 품목명 사용 (예: "fabric", "textile", "bag")
-   - 검색어 자동 하이라이트
-
-#### 📋 검색 결과 형식
-- 국가별 구분 표시 (🇺🇸 미국 / 🇪🇺 EU)
-- 카드 색상으로 국가 구분 (미국: 빨간색 / EU: 파란색)
-- 각 카드 클릭 시 상세 정보:
-  - 참고문서번호, 결정일자, 결정기관, HS 코드, 연도
-  - 요약(reply), 상세 내용(description)
-
-### 6. 📚 HS 해설서 분석 (사용자 제시 코드)
-
-**사용자가 제시한 HS 코드들을 비교 분석합니다**
-
-#### 📊 5단계 체계적 분석
-1. **코드 추출**: 질문에서 HS 코드 자동 추출
-2. **관세율표 정보**: 각 HS 코드의 국문/영문 품명 수집
-3. **해설서 수집**: 각 HS 코드의 해설서 정보 수집 및 요약
-4. **통칙 준비**: HS 분류 통칙 9개 조항 준비
-5. **AI 비교 분석**: Gemini AI가 모든 정보를 종합하여 비교 분석
-
-#### ✨ 특징
-- 투명한 분석 과정: 각 단계별 진행 상황을 실시간으로 공개
-- 여러 HS 코드의 장단점, 적용 가능성, 리스크 종합 평가
-- 통칙 기반 전문가 수준의 분석
-
-#### 💡 예시
-- "3809.91과 5603 중 섬유유연제 시트는?"
-- "3917.32와 4009 중 폴리아미드 호스는?"
-
-#### ⚠️ 주의사항
-- 반드시 HS 코드를 질문에 포함해야 합니다
-- 2개 이상의 HS 코드 비교 권장
-
-### 7. 📖 HS 해설서 원문 검색
-
-**특정 HS 코드의 해설서 원문을 조회합니다**
-
-#### 📖 사용 방법
-- HS 코드만 입력 (예: "3809", "3917", "9027")
-- 4자리 HS 코드 권장
-
-#### 📋 검색 결과
-- 통칙, 부/류/호 해설을 체계적으로 정리하여 표시
-- 구조화된 형태로 가독성 높게 제공
-
-#### 💼 활용 사례
-- HS 해설서 내용 빠른 확인
-- 분류 기준 상세 파악
-- 해설서 분석 전 사전 조사
+| Agent | 1순위 | 2순위 | 3순위 |
+|:---|:---|:---|:---|
+| Head Agent (최종 판단) | Gemini 3.0 Preview | 2.5 Lite | 2.0 Flash |
+| Group Agent (사례 분석) | Gemini 2.5 Flash | 2.5 Lite | 2.0 Flash |
+| Query Expander (검색 확장) | Gemini 2.5 Lite | 2.0 Flash | — |
 
 ---
 
-## ⚠️ 한계
+## ⚠️ 한계 및 주의사항
 
-### 🤖 AI 답변의 한계
+### AI 답변의 한계
+- AI가 모든 사례를 읽는 것이 아니라, TF-IDF로 유사한 사례를 찾아 분석합니다
+- AI 분류 결과는 **법적 효력이 없으며**, 중요한 결정은 전문가 검토가 필요합니다
 
-- AI는 완벽하지 않고, 실수를 합니다.
-- AI가 모든 사례를 읽고 답변하는 것이 아닙니다. TF-IDF로 유사한 사례를 찾아내서 읽고 답변하는데, 가끔 유사한 사례를 잘 찾지 못하는 경우도 있습니다.
-- AI는 분류사례를 참고하여 답변하지만, **법적 효력은 없습니다**
-- 중요한 결정은 반드시 전문가 검토 필요
+### 데이터 최신성
+- 분류사례 데이터는 수동 수집 후 재실행이 필요합니다
 
-### 🔄 데이터 최신성
+### 검색 정확도
+- 너무 짧은 검색어(1~2글자)는 정확도가 낮을 수 있습니다
+- HS 해설서나 분류사례에 나오는 전문 용어 사용 시 검색 정확도가 향상됩니다
 
-- **분류사례 업데이트**: 수동으로 데이터 수집 필요
-- **최신 사례 즉시 반영 불가**: 데이터 업데이트 후 재실행 필요
+### Gemini API 무료 사용 한도
 
-### 🎯 검색 정확도
-
-- **TF-IDF Character n-gram 특성**:
-  - 2~4글자 단위로 텍스트 분해하여 검색
-  - 복합어 정확 매칭 ("폴리우레탄폼", "리튬이온배터리")
-  - 너무 짧은 검색어(1~2글자)는 검색 정확도 낮음
-- **전문 용어 사용 권장**: 일상 언어보다 HS 해설서나 분류사례에 나오는 전문 용어 사용 시 검색 정확도 향상
-
-### 🔐 제미나이 API 호출 한계 (무료 사용자)
-
-- **분당 요청 수 (RPM)**: 10회
-- **분당 토큰 수 (TPM)**: 250,000 토큰
-- **일일 요청 수 (RPD)**: 250회
-- **Google 검색 연동**: 500 RPD까지 무료
+| 항목 | 한도 |
+|:---|:---|
+| 분당 요청 수 (RPM) | 10회 |
+| 분당 토큰 수 (TPM) | 250,000 |
+| 일일 요청 수 (RPD) | 250회 |
+| Google 검색 연동 | 500 RPD |
 
 ---
 
-## 📁 프로젝트 구조
+## 📄 라이선스 / 개발자 정보
 
-```
-kcs_hs_chatbot/
-├── main.py                      # Streamlit 웹 애플리케이션 (프로그램 실행 파일)
-├── prompts.py                   # AI 시스템 프롬프트 관리
-├── config.py                    # 설정 파일 (카테고리, 예시 질문 등)
-├── build_tfidf_index.py         # TF-IDF 인덱스 생성 스크립트
-├── tfidf_indexes.pkl.gz         # 사전 생성된 TF-IDF 인덱스 (캐시 파일)
-├── hs_search.py                 # HS 코드 검색 유틸리티
-├── utils/                       # 핵심 기능 모듈
-│   ├── __init__.py              # 모듈 통합 및 export
-│   ├── data_loader.py           # HSDataManager 클래스 (데이터 로딩)
-│   ├── tfidf_search.py          # Character n-gram TF-IDF 검색 엔진
-│   ├── tfidf_case_searcher.py   # TF-IDF 기반 사례 검색
-│   ├── keyword_searcher.py      # 키워드 기반 원문 검색 엔진
-│   ├── question_classifier.py   # 질문 유형 자동 분류
-│   ├── handlers.py              # 질문 유형별 처리 함수 (Multi-Agent, 원문 검색)
-│   ├── hs_manual_utils.py       # HS 해설서 관련 함수들
-│   ├── search_engines.py        # 병렬 검색 엔진 (관세율표 + 해설서)
-│   └── text_utils.py            # 텍스트 처리 유틸리티
-├── knowledge/                   # 핵심 데이터 파일
-│   ├── HS분류사례_part1.json ~ part10.json  # 국내 분류사례 (분할)
-│   ├── HS위원회.json                        # HS위원회 결정
-│   ├── HS협의회.json                        # HS협의회 결정
-│   ├── hs_classification_data_us.json       # 미국 CBP 분류사례
-│   ├── hs_classification_data_eu.json       # EU 관세청 BTI
-│   ├── hstable.json                         # HS 품목분류표
-│   ├── 통칙_grouped.json                     # HS 통칙
-│   └── grouped_11_end.json                  # HS 해설서
-├── .env                         # 환경 변수 (API 키) - git에서 제외
-├── requirements.txt             # Python 패키지 의존성
-└── README.md                    # 프로젝트 문서
-```
-
-### 📝 핵심 파일 설명
-
-#### 🎯 메인 프로그램
-- **`main.py`**: Streamlit 기반 웹 애플리케이션 (프로그램 실행 파일)
-- **`prompts.py`**: AI 시스템 프롬프트 및 대화 템플릿 관리
-- **`config.py`**: 카테고리 매핑, 로거 아이콘, 예시 질문 등 설정 관리
-
-#### ⚡ 성능 최적화
-- **`build_tfidf_index.py`**: TF-IDF 인덱스 사전 생성 스크립트 (초기 로딩 시간 단축)
-- **`tfidf_indexes.pkl.gz`**: 사전 생성된 TF-IDF 인덱스 캐시 파일
-
-#### 🔧 핵심 유틸리티 모듈 (utils/)
-- **`data_loader.py`**: HSDataManager 클래스 (데이터 로딩 및 관리)
-- **`tfidf_search.py`**: Character n-gram 기반 TF-IDF 검색 엔진
-- **`tfidf_case_searcher.py`**: TF-IDF 기반 품목분류 사례 검색
-- **`keyword_searcher.py`**: 키워드 기반 원문 검색 (참고문서번호, 키워드 매칭)
-- **`question_classifier.py`**: 사용자 질문 유형 자동 분류
-- **`handlers.py`**: 7가지 질문 유형별 처리 로직 (Multi-Agent, 원문 검색 등)
-- **`hs_manual_utils.py`**: HS 해설서 검색 및 처리 함수
-- **`search_engines.py`**: 병렬 검색 엔진 (관세율표 + 해설서 동시 검색)
-- **`text_utils.py`**: 텍스트 정제 및 처리 유틸리티
-
-#### 📊 데이터 폴더 (knowledge/)
-- 품목분류 사례 및 해설서 데이터 저장 (JSON 형식)
-- 국내 분류사례, 해외 분류사례, HS 해설서, 통칙 등
-
----
-
-## ⚙️ 기술 아키텍처
-
-### 🔄 전체 동작 원리
-
-```
-[사용자 질문]
-    ↓
-[AI 쿼리 확장] → 유사어/영문/관련 용어 자동 추가 (Gemini 2.0 Flash)
-    ↓
-[TF-IDF 검색] → 확장된 쿼리로 상위 100개 사례 추출 (Character n-gram)
-    ↓
-[5개 그룹 분할] → 각 그룹 20개 사례
-    ↓
-[Group AI 병렬 분석] → 5개 AI가 동시 분석 (ThreadPoolExecutor)
-    ↓
-[Head AI 종합] → 최종 답변 정리 (Gemini 2.5 Flash)
-    ↓
-[사용자에게 답변 표시]
-```
-
-### 💎 핵심 기술 3가지
-
-#### 🤝 1. 멀티 에이전트 시스템
-
-- **쉬운 설명**: 5개 AI가 동시에 분석 → Head AI가 종합 정리
-- **기술 원리**: ThreadPoolExecutor로 최대 3개 Group AI 동시 실행
-- **장점**: 검색 시간 단축, 다양한 관점 답변
-
-#### ⚡ 2. TF-IDF Character n-gram 검색
-
-- **쉬운 설명**: 2~4글자 단위로 텍스트를 분해하여 복합어 정확 매칭
-- **기술 원리**:
-  - "리튬이온배터리" → "리튬", "튬이", "이온", "온배", "배터", "터리" 등으로 분해
-  - 각 n-gram의 빈도(TF)와 희소성(IDF)을 계산하여 문서 간 유사도 평가
-- **장점**: 형태소 분석기 대비 10배 이상 빠른 속도, 복합어 정확 매칭
-
-#### 🔗 3. 하이브리드 RAG (AI 쿼리 확장 + TF-IDF + Multi-Agent)
-
-**개요**: 전통적 검색(TF-IDF)의 속도 + AI의 의미 이해 능력을 결합
-
-**10단계 처리 과정**:
-
-**STAGE 1: AI 기반 쿼리 확장 (의미 이해)**
-1. **사용자 쿼리 입력**: 품목에 대한 질문 입력
-
-2. **QueryExpander 초기화**: 품목분류 용어사전 1,149개 로드
-
-3. **AI 기반 쿼리 분석** (Gemini 2.0 Flash):
-   - 물품명, 재질, 성분, 기능 자동 식별
-   - 한글/영문 유사어 생성 (용어사전 기반만 사용)
-   - 예: "스마트워치 밴드" → "시계, 줄, 스트랩, watch, strap, wrist, 실리콘, 고무, accessory"
-
-4. **확장 결과 저장**: session_state에 쿼리 확장 정보 저장
-
-**STAGE 2: TF-IDF 기반 검색 (효율적 매칭)**
-
-5. **TF-IDF 검색 실행** (확장된 쿼리 사용):
-   - Character n-gram으로 복합어 분해
-   - TF × IDF 점수 계산
-   - 코사인 유사도 계산
-   - 상위 100개 사례 추출 (0.5초 이내)
-
-**STAGE 3: Multi-Agent 병렬 분석 (심층 이해)**
-
-6. **사례 그룹 분할**: 5개 그룹 × 20개 사례
-
-7. **5개 Group Agent 병렬 실행**:
-   - 각 Agent: 20개 사례 분석
-   - 빈도수 기반 HS코드 후보 선정
-   - ThreadPoolExecutor 병렬 처리
-
-8. **5개 분석 결과 수집**: 실시간 UI 업데이트
-
-**STAGE 4: 최종 종합 (Head Agent)**
-
-9. **Head Agent 실행** (Gemini 2.5 Flash):
-   - 5개 결과 교차 검증
-   - 종합 빈도수 계산
-   - 상충 해결 및 신뢰도 평가
-
-10. **최종 답변 생성 및 UI 표시**
-
-**핵심 장점**:
-- **어휘 불일치 해결**: AI 쿼리 확장으로 동의어/유사어 자동 검색
-- **검색 범위 확대**: 더 많은 관련 분류 사례 발견 가능
-- **빠른 속도**: TF-IDF로 1초 이내 검색 (임베딩 대비 10배 빠름)
-- **높은 정확도**: Multi-Agent 교차 검증으로 신뢰도 향상
-- **투명성**: 쿼리 확장 결과, 그룹별 분석 과정 모두 UI에 표시
-
-**기술 스택**:
-- QueryExpander: `utils/query_expander.py` (Gemini 2.0 Flash + HS 용어사전 1,149개)
-- TF-IDF: `utils/tfidf_case_searcher.py` (scikit-learn TfidfVectorizer, Character n-gram 2-4)
-- Multi-Agent: `utils/handlers.py` (ThreadPoolExecutor, 최대 5 스레드)
-- Head Agent: Gemini 2.5 Flash
-
-**성능 지표**:
-- 쿼리 확장: 1초
-- TF-IDF 검색: 0.5초
-- Multi-Agent 분석: 3~4초 (병렬)
-- Head Agent 종합: 1~2초
-- **총 처리 시간: 5~8초**
-
-**실제 예시**:
-```
-[원본 쿼리]
-"폴리에틸렌 비닐봉지"
-
-[AI 확장 결과]
-물품: 비닐봉지
-재질: 폴리에틸렌 (플라스틱)
-성분: 폴리에틸렌
-기능: 포장, 운반
-확장 쿼리: "비닐봉지 봉지 포장 비닐 폴리에틸렌 플라스틱 합성수지
-에틸렌 폴리머 운반 저장 bag plastic packaging poly polyethylene"
-
-[검색 결과]
-원본 쿼리만 사용: "폴리에틸렌 비닐봉지"와 정확히 일치하는 사례만 검색
-확장 쿼리 사용: 더 많은 관련 사례 검색 가능
-  ✓ "폴리에틸렌 비닐봉지" 사례
-  ✓ "플라스틱 포장재" 사례 (유사 표현 발견)
-  ✓ "polyethylene bag" 사례 (영문 표현 발견)
-  ✓ "PE 봉지" 사례 (약어 표현 발견)
-
-[최종 분석]
-TF-IDF → 상위 100개 추출 → 5개 그룹 분할 →
-5개 Agent 병렬 분석 → Head Agent 종합 →
-"HS 3923.29-0000 (플라스틱 포장용 백)" 최종 추천
-```
-
----
-
-## 🔧 설치 및 실행 방법
-
-### 💻 필수 프로그램
-
-- **Python 3.13.7**
-- **인터넷 연결** (Google API 사용)
-
-### 🔑 필수 API 키 발급
-
-- **Google API Key** (필수): [Google AI Studio](https://aistudio.google.com/apikey)에서 무료 발급
-
-### 🚀 설치 및 실행 (Windows 기준)
-
-#### 1️⃣ 1단계: 프로그램 다운로드
-
-```bash
-git clone https://github.com/YSCHOI-github/kcs_hs_chatbot
-cd kcs_hs_chatbot
-```
-
-#### 2️⃣ 2단계: 필요한 라이브러리 설치
-
-```bash
-pip install -r requirements.txt
-```
-
-#### 3️⃣ 3단계: API 키 설정
-
-`.env` 파일 생성 후 아래 내용 입력:
-
-```
-GOOGLE_API_KEY=여기에_발급받은_구글_API_키_입력
-```
-
-#### 4️⃣ 4단계: 프로그램 실행
-
-```bash
-streamlit run main.py
-```
-
-#### 5️⃣ 5단계: 웹 브라우저에서 사용
-
-- 자동으로 브라우저 열림
-- 또는 주소창에 `http://localhost:8501` 입력
-
----
-
-## 📦 주요 의존성
-
-```python
-streamlit              # 웹 애플리케이션 프레임워크
-google-genai           # Gemini AI 모델 연동
-scikit-learn          # TF-IDF 벡터화
-numpy, pandas         # 데이터 처리
-requests              # API 호출
-python-dotenv         # 환경변수 관리
-```
-
----
-
-## 📄 라이선스
-
-**MIT License**
-
-- 누구나 자유롭게 사용, 수정, 배포 가능
-- 상업적 이용 가능
-- 단, 원저작자 표시 필수
-
----
-
-## 👤 개발자 정보
+**MIT License** — 자유롭게 사용, 수정, 배포 가능 (원저작자 표시 필수)
 
 - **개발자**: Yeonsoo CHOI
 - **GitHub**: [YSCHOI-github/kcs_hs_chatbot](https://github.com/YSCHOI-github/kcs_hs_chatbot)
-
-
-
-
